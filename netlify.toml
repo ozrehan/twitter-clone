@@ -1,0 +1,9 @@
+# Netlify: functions live in netlify/functions (vendored node_modules, no build step).
+[functions]
+  directory = "netlify/functions"
+
+# Route /api/* to the single api function (200 = rewrite, keeps the URL).
+[[redirects]]
+  from = "/api/*"
+  to = "/.netlify/functions/api/:splat"
+  status = 200
