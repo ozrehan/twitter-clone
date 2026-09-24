@@ -14,8 +14,9 @@
 
     App.renderComposer(App.$("#composerSlot", root));
 
-    App.on(root, "click", "[data-htab]", function (e, tab) {
+    App.on(root, "click", "[data-htab]", async function (e, tab) {
       S.homeTab = tab.getAttribute("data-htab");
+      try { await App.loadTimeline(); } catch (err) { /* keep old list */ }
       App.render();
     });
 
