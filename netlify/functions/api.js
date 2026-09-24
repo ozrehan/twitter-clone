@@ -82,9 +82,15 @@ function createApp(store) {
     const h = headers["authorization"] || headers["Authorization"] || "";
     const m = /^Bearer\s+(.+)$/.exec(h);
     if (!m) return null;
-    const s = await get("sessions/" + m[1]);
-    if (!s || s.exp < Date.now()) return null;
-    return getUser(s.username);
+    for (let i = 0; i < 5; i++) {
+      const s = await get("sessions/" + m[1]);
+      if (s && s.exp >= Date.now()) {
+        const u = await getUser(s.username);
+        if (u) return u;
+      }
+      if (i < 4) await new Promise(r => setTimeout(r, 350));
+    }
+    return null;
   }
 
   async function loadUsers(ids) {
@@ -522,7 +528,7 @@ function createApp(store) {
 
 async function blobStore() {
   const { getStore } = require("@netlify/blobs");
-  const s = getStore({ name: "twitter", consistency: "strong" });
+  const s = getStore("twitter");
   return {
     get: (k) => s.get(k, { type: "json" }),
     set: (k, v) => s.setJSON(k, v),
@@ -535,6 +541,7 @@ async function blobStore() {
 }
 
 exports.handler = async (event) => {
+  try { const _b = require("@netlify/blobs"); const _c = JSON.parse(Buffer.from(event.blobs, "base64").toString()); _b.setEnvironmentContext({ siteID: event.headers["x-nf-site-id"], token: _c.token, apiURL: "https://api.netlify.com" }); } catch (e) { /* not on Netlify: local tests */ }
   let path = event.path || "";
   /* support both /.netlify/functions/api/... and /api/... (via netlify.toml redirect) */
   path = path.replace(/^\/.netlify\/functions\/api\/?/, "").replace(/^\/api\/?/, "");
