@@ -31,6 +31,7 @@
         '<div class="mi" data-more="settings">' + App.icon("settings", "sm") + "Settings</div>" +
         '<div class="mi" data-more="bookmarks">' + App.icon("bookmark", "sm") + "Bookmarks</div>" +
         '<div class="mi" data-more="communities">' + App.icon("people", "sm") + "Communities</div>" +
+        '<div class="mi" data-logout>' + App.icon("back", "sm") + "Log out</div>" +
       "</div>" +
       '<div class="nav-user" data-nav="profile" data-user="' + me.id + '">' +
         '<img src="' + App.avatar(me.seed) + '" alt="' + App.esc(me.name) + '">' +
@@ -46,13 +47,14 @@
         m.style.display = m.style.display === "none" ? "block" : "none";
         return;
       }
-      if (view === "profile") App.navigate("profile", el.getAttribute("data-user") || "you");
+      if (view === "profile") App.navigate("profile", el.getAttribute("data-user") || App.store.currentUserId);
       else App.navigate(view);
     });
     App.on(root, "click", "[data-more]", function (e, el) {
       App.$("#moreMenu", root).style.display = "none";
       App.navigate(el.getAttribute("data-more"));
     });
+    App.on(root, "click", "[data-logout]", function () { App.logout(); });
     /* Post button focuses the home composer */
     App.on(root, "click", "[data-nav-post]", function () {
       App.navigate("home");
