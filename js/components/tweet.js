@@ -6,8 +6,7 @@
   App.tweetCard = function (t, opts) {
     opts = opts || {};
     var u = App.userById(t.userId);
-    var S = App.store;
-    var liked = !!S.liked[t.id], reposted = !!S.reposted[t.id], saved = !!S.bookmarked[t.id];
+    var liked = !!t.liked, reposted = !!t.reposted, saved = !!t.bookmarked;
 
     var head =
       '<div class="tweet-head">' +
@@ -53,9 +52,10 @@
         '<div class="big-time">' + App.esc(t.time) + " · <b>" + App.fmtFull(t.views) + "</b> Views</div>" +
         '<div class="big-stats"><span><b>' + App.fmtFull(t.replies) + "</b> Replies</span>" +
           "<span><b>" + App.fmtFull(t.reposts) + "</b> Reposts</span>" +
-          "<span><b>" + App.fmtFull(t.likes) + "</b> Likes</span>" +
-          "<span><b>" + App.fmtFull(Object.keys(App.store.bookmarked).filter(function (k) { return App.store.bookmarked[k] && App.tweetById(+k) === t; }).length) + "</b> Bookmarks</span></div>" +
+          "<span><b>" + App.fmtFull(t.likes) + "</b> Likes</span></div>" +
         actions + '<div class="reply-slot"></div>' + nested +
+        (t.userId === App.store.currentUserId
+          ? '<button class="del-tweet" data-del-tweet>Delete post</button>' : "") +
       "</div>";
     }
 
@@ -85,33 +85,41 @@
       App.navigate("profile", el.getAttribute("data-user-link"));
     });
 
-    App.on(root, "click", ".act", function (e, btn) {
+    /* delete own tweet (big view) */
+    App.on(root, "click", "[data-del-tweet]", async function (e, btn) {
+      e.stopPropagation();
+      var id = +btn.closest("[data-tweet]").getAttribute("data-tweet");
+      if (!window.confirm("Delete this post?")) return;
+      try { await App.deleteTweet(id); App.navigate("home"); } catch (err) { /* noop */ }
+    });
+
+    App.on(root, "click", ".act", async function (e, btn) {
       e.stopPropagation();
       var card = btn.closest("[data-tweet]");
       var id = +card.getAttribute("data-tweet");
       var kind = btn.getAttribute("data-act");
 
-      if (kind === "like") {
-        var tw = App.tweetById(id);
-        if (!tw) return;
-        var on = App.toggleLike(id);
-        btn.classList.toggle("liked", on);
-        btn.querySelector(".cnt").textContent = App.fmt(tw.likes);
-      } else if (kind === "repost") {
-        var tw2 = App.tweetById(id);
-        if (!tw2) return;
-        var rp = App.toggleRepost(id);
-        btn.classList.toggle("reposted", rp);
-        btn.querySelector(".cnt").textContent = App.fmt(tw2.reposts);
-      } else if (kind === "bookmark") {
-        var sv = App.toggleBookmark(id);
-        btn.classList.toggle("bookmarked", sv);
-      } else if (kind === "reply") {
-        toggleReplyBox(card, id);
-      } else if (kind === "share") {
-        btn.querySelector(".circ").style.color = "var(--accent)";
-        setTimeout(function () { btn.querySelector(".circ").style.color = ""; }, 600);
-      }
+      try {
+        if (kind === "like") {
+          var on = await App.toggleLike(id);
+          btn.classList.toggle("liked", on);
+          var tw = App.tweetById(id);
+          if (tw) btn.querySelector(".cnt").textContent = App.fmt(tw.likes);
+        } else if (kind === "repost") {
+          var rp = await App.toggleRepost(id);
+          btn.classList.toggle("reposted", rp);
+          var tw2 = App.tweetById(id);
+          if (tw2) btn.querySelector(".cnt").textContent = App.fmt(tw2.reposts);
+        } else if (kind === "bookmark") {
+          var sv = await App.toggleBookmark(id);
+          btn.classList.toggle("bookmarked", sv);
+        } else if (kind === "reply") {
+          toggleReplyBox(card, id);
+        } else if (kind === "share") {
+          btn.querySelector(".circ").style.color = "var(--accent)";
+          setTimeout(function () { btn.querySelector(".circ").style.color = ""; }, 600);
+        }
+      } catch (err) { /* optimistic state already rolled back */ }
     });
 
     function toggleReplyBox(card, id) {
@@ -129,8 +137,12 @@
       var send = function () {
         var text = input.value.trim();
         if (!text) return;
-        App.addReply(id, text);
-        App.render(); /* re-render to show nested reply */
+        input.disabled = true;
+        App.addReply(id, text).then(function () {
+          App.render(); /* re-render to show nested reply */
+        }).catch(function () {
+          input.disabled = false;
+        });
       };
       slot.querySelector(".r-send").onclick = function (e) { e.stopPropagation(); send(); };
       input.onkeydown = function (ev) {
