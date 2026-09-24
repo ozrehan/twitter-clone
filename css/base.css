@@ -1,0 +1,27 @@
+/* ============ base: reset, typography, scrollbars ============ */
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font);
+  font-size: 15px;
+  -webkit-font-smoothing: antialiased;
+}
+
+a { color: inherit; text-decoration: none; }
+button { font-family: var(--font); }
+
+/* shared svg icon sizing: <svg class="icon"><use .../></svg> */
+.icon { width: 26px; height: 26px; fill: currentColor; flex-shrink: 0; }
+.icon.sm { width: 18px; height: 18px; }
+.icon.xs { width: 16px; height: 16px; }
+
+/* X logo path always fills with text color */
+.icon.logo-fill { fill: var(--text); }
+
+/* slim dark scrollbars */
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #333639; border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: #536471; }
