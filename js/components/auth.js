@@ -22,7 +22,7 @@
             (mode === "signup"
               ? '<input id="authName" class="auth-input" placeholder="Name" maxlength="50" autocomplete="name">'
               : "") +
-            '<input id="authUser" class="auth-input" placeholder="Username" maxlength="15" autocomplete="username">' +
+            '<input id="authUser" class="auth-input" placeholder="Username" maxlength="20" autocomplete="username">' +
             '<input id="authPass" class="auth-input" type="password" placeholder="Password" autocomplete="current-password">' +
             '<button class="auth-submit" type="submit">' +
               (mode === "signin" ? "Sign in" : "Create account") + "</button>" +
