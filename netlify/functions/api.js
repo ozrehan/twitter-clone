@@ -36,7 +36,12 @@ function pubUser(u) {
 }
 
 function hashPw(pw, salt) {
-  return crypto.scryptSync(String(pw), salt, 64).toString("hex");
+  return crypto.createHash("sha256").update(String(salt) + String(pw)).digest("hex");
+}
+
+/* 32 hex chars, 30-day expiry, stored server-side */
+function newToken() {
+  return crypto.randomBytes(16).toString("hex");
 }
 
 function ok(status, obj) {
@@ -49,7 +54,7 @@ function ok(status, obj) {
 const err = (status, message) => ok(status, { error: message });
 
 function validUsername(u) {
-  return typeof u === "string" && /^[a-zA-Z0-9_]{1,15}$/.test(u);
+  return typeof u === "string" && /^[a-z0-9]{3,20}$/.test(u);
 }
 
 /* ---------- app factory ---------- */
@@ -80,7 +85,7 @@ function createApp(store) {
 
   async function sessionUser(headers) {
     const h = headers["authorization"] || headers["Authorization"] || "";
-    const m = /^Bearer\s+(.+)$/.exec(h);
+    const m = /^Bearer\s+([0-9a-fA-F]{32})$/.exec(h);
     if (!m) return null;
     for (let i = 0; i < 5; i++) {
       const s = await get("sessions/" + m[1]);
@@ -232,8 +237,8 @@ function createApp(store) {
     if (method === "POST" && seg[0] === "auth" && (seg[1] === "signup" || seg[1] === "login")) {
       const username = (body.username || "").trim();
       const password = body.password || "";
-      if (!validUsername(username)) return err(400, "username must be 1-15 chars: letters, numbers, _");
-      if (typeof password !== "string" || password.length < 4) return err(400, "password must be at least 4 characters");
+      if (!validUsername(username)) return err(400, "username must be 3-20 lowercase letters/digits");
+      if (typeof password !== "string" || password.length < 6) return err(400, "password must be at least 6 characters");
 
       if (seg[1] === "signup") {
         if (await getUser(username)) return err(409, "username taken");
@@ -245,7 +250,7 @@ function createApp(store) {
           bot: false, salt, hash: hashPw(password, salt),
         };
         await set("users/" + username, user);
-        const token = crypto.randomBytes(32).toString("hex");
+        const token = newToken();
         await set("sessions/" + token, { username, exp: Date.now() + SESSION_MS });
         return ok(201, { token, user: pubUser(user), newUser: true });
       }
@@ -256,7 +261,7 @@ function createApp(store) {
       const h = hashPw(password, user.salt);
       if (!crypto.timingSafeEqual(Buffer.from(h, "hex"), Buffer.from(user.hash, "hex")))
         return err(401, "invalid username or password");
-      const token = crypto.randomBytes(32).toString("hex");
+      const token = newToken();
       await set("sessions/" + token, { username, exp: Date.now() + SESSION_MS });
       return ok(200, { token, user: pubUser(user) });
     }
@@ -284,6 +289,23 @@ function createApp(store) {
       }
       out.sort((a, b) => b.followers - a.followers);
       return ok(200, out);
+    }
+
+    /* GET /users/search?q= — find users by username or name */
+    if (method === "GET" && seg[0] === "users" && seg.length === 2 && seg[1] === "search") {
+      const q = String(query.q || "").toLowerCase().trim();
+      if (!q) return ok(200, { users: [] });
+      const keys = await list("users/");
+      const out = [];
+      for (const k of keys) {
+        const u = await get(k);
+        if (!u || u.username === me.username) continue;
+        if (u.username.toLowerCase().includes(q) || String(u.name).toLowerCase().includes(q)) {
+          out.push(pubUser(u));
+          if (out.length >= 20) break;
+        }
+      }
+      return ok(200, { users: out });
     }
 
     /* GET /users/:username */
@@ -343,9 +365,9 @@ function createApp(store) {
       return ok(200, { following: true, followers: target.followers });
     }
 
-    /* GET /timeline */
+    /* GET /timeline — default: tweets from me + people I follow, newest first */
     if (method === "GET" && seg[0] === "timeline" && seg.length === 1) {
-      const tab = ["foryou", "following", "bookmarks", "likes"].includes(query.tab) ? query.tab : "foryou";
+      const tab = ["foryou", "following", "bookmarks", "likes"].includes(query.tab) ? query.tab : "following";
       return ok(200, await getTimeline(me, tab, query.before));
     }
 
@@ -397,12 +419,13 @@ function createApp(store) {
       return ok(201, enrich(t, me, users));
     }
 
-    /* POST /tweets/:id/like|repost|bookmark (toggle) */
+    /* POST /tweets/:id/like|repost|retweet|bookmark (toggle) */
     if (method === "POST" && seg[0] === "tweets" && seg.length === 3 &&
-        ["like", "repost", "bookmark"].includes(seg[2])) {
+        ["like", "repost", "retweet", "bookmark"].includes(seg[2])) {
       const t = await get("tweets/" + seg[1]);
       if (!t) return err(404, "tweet not found");
-      const kind = seg[2] + "s";
+      const action = seg[2] === "retweet" ? "repost" : seg[2];
+      const kind = action + "s";
       const key = kind + "/" + me.username + "/" + t.id;
       const existing = await get(key);
       if (existing) {
@@ -526,12 +549,15 @@ function createApp(store) {
 
 /* ---------- Netlify handler ---------- */
 
-async function blobStore() {
-  const { getStore } = require("@netlify/blobs");
-  const s = getStore("twitter");
+/* Store interface expected by createApp:
+ *   get(k) -> parsed JSON or null
+ *   set(k, value) -> value is a plain object
+ *   del(k)
+ *   list(prefix) -> [keys] */
+function wrapBlobs(s) {
   return {
     get: (k) => s.get(k, { type: "json" }),
-    set: (k, v) => s.setJSON(k, v),
+    set: (k, v) => s.set(k, JSON.stringify(v)),
     del: (k) => s.delete(k),
     list: async (prefix) => {
       const r = await s.list({ prefix });
@@ -540,8 +566,47 @@ async function blobStore() {
   };
 }
 
+function memoryStore() {
+  const mem = new Map();
+  return {
+    get: async (k) => {
+      if (!mem.has(k)) return null;
+      try { return JSON.parse(mem.get(k)); } catch (e) { return null; }
+    },
+    set: async (k, v) => { mem.set(k, JSON.stringify(v)); },
+    del: async (k) => { mem.delete(k); },
+    list: async (prefix) => {
+      const p = prefix || "";
+      return [...mem.keys()].filter((k) => k.startsWith(p));
+    },
+  };
+}
+
 exports.handler = async (event) => {
-  try { const _b = require("@netlify/blobs"); const _c = JSON.parse(Buffer.from(event.blobs, "base64").toString()); _b.setEnvironmentContext({ siteID: event.headers["x-nf-site-id"], token: _c.token, apiURL: "https://api.netlify.com" }); } catch (e) { /* not on Netlify: local tests */ }
+  let store = null;
+  try {
+    const blobs = require("@netlify/blobs");
+    try {
+      const _c = JSON.parse(Buffer.from(event.blobs, "base64").toString());
+      blobs.setEnvironmentContext({
+        siteID: event.headers["x-nf-site-id"],
+        token: _c.token,
+        apiURL: "https://api.netlify.com",
+      });
+    } catch (e) { /* not on Netlify: local tests */ }
+    const s = blobs.getStore("twitter");
+    // Probe the store early so a misconfigured Blobs env fails here,
+    // inside our try/catch, instead of crashing the invocation.
+    await s.get("__probe__").catch(() => null);
+    store = wrapBlobs(s);
+  } catch (e) {
+    store = null;
+  }
+  if (!store) {
+    // Fallback: in-memory store (ephemeral). Used for local tests and as a
+    // last resort so the function always answers instead of crashing.
+    store = memoryStore();
+  }
   let path = event.path || "";
   /* support both /.netlify/functions/api/... and /api/... (via netlify.toml redirect) */
   path = path.replace(/^\/.netlify\/functions\/api\/?/, "").replace(/^\/api\/?/, "");
@@ -551,7 +616,7 @@ exports.handler = async (event) => {
   }
   if (event.httpMethod === "OPTIONS") return ok(204, {});
   try {
-    const app = createApp(await blobStore());
+    const app = createApp(store);
     return await app.handle(event.httpMethod, path, event.queryStringParameters, body, event.headers || {});
   } catch (e) {
     console.error("api error", e);
