@@ -86,3 +86,7 @@
 .tweet-big .big-stats { display: flex; gap: 20px; padding: 12px 0; border-bottom: 1px solid var(--border); font-size: 15px; color: var(--text-dim); }
 .tweet-big .big-stats b { color: var(--text); }
 .tweet-big .actions { max-width: none; justify-content: space-around; margin: 4px 0 0; }
+
+/* delete affordance for own posts (big view) */
+.del-tweet { background: none; border: none; color: var(--text-dim); font-size: 13px; cursor: pointer; padding: 10px 0; }
+.del-tweet:hover { color: #f4212e; text-decoration: underline; }
