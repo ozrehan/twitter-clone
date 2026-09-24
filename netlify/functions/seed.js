@@ -7,24 +7,19 @@ const data = require("./seed-data");
 
 /* per-personality DM reply pools so single-player DMs feel alive */
 const BOT_POOLS = {
-  levelsio: [
-    "ship it from a cabin next",
+  buildr: [
+    "ship it, then write the postmortem",
     "revenue > meetings. always.",
     "that's the whole roadmap",
     "indie math keeps mathing",
   ],
-  ada_builds: [
-    "512 with grad accumulation, fp8",
-    "single 4090, can you believe it",
+  novadev: [
+    "tiny batch, big patience",
+    "single laptop, can you believe it",
     "loss curves are beautiful",
-    "the future is gloriously decentralized",
+    "the future is gloriously local",
   ],
-  memelord: ["💀 posting this immediately", "new meme just dropped", "lol true", "🔥🔥🔥"],
-  karpathy: [
-    "the hottest new programming language is english",
-    "micrograd in 100 lines next, I believe in you",
-    "backprop finally clicked for 3 of my neurons",
-  ],
+  pixelpete: ["golden hour or nothing", "new preset just dropped", "shot 400, kept 12"],
 };
 const GENERIC_POOL = data.BOT_REPLIES.concat([
   "haha exactly",
@@ -47,7 +42,7 @@ function parseAgo(s) {
 }
 
 function hashPw(pw, salt) {
-  return crypto.scryptSync(String(pw), salt, 64).toString("hex");
+  return crypto.createHash("sha256").update(String(salt) + String(pw)).digest("hex");
 }
 
 function dmKey(a, b) {
@@ -105,7 +100,7 @@ async function seedAll(store) {
   await set("meta/seq", { tweet: 1000, notif: 100 });
 
   /* ---- seed follows for "you" (mirrors the original demo state) ---- */
-  for (const target of ["levelsio", "memelord", "ada_builds", "showerthoughts"]) {
+  for (const target of ["pixelpete", "buildr", "novadev"]) {
     await set("follows/you/" + target, { ts: now });
   }
 
