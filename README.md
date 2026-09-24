@@ -1,5 +1,8 @@
 # X (Twitter) Clone — full-stack
 
+
+**Live demo:** [https://ozrehan-twitter-clone.netlify.app](https://ozrehan-twitter-clone.netlify.app)
+
 A pixel-faithful X/Twitter web client **with a real backend**: accounts,
 persistent tweets/likes/follows/bookmarks/DMs, notifications generated from
 real events. Frontend is vanilla HTML/CSS/JS (no frameworks, no build step);
