@@ -56,10 +56,16 @@
     input.addEventListener("keydown", function (e) {
       if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); postBtn.click(); }
     });
-    postBtn.addEventListener("click", function () {
+    postBtn.addEventListener("click", async function () {
       var text = input.textContent.trim();
       if (!text || text.length > LIMIT) return;
-      App.postTweet(text);
+      postBtn.disabled = true;
+      try {
+        await App.postTweet(text);
+      } catch (e) {
+        postBtn.disabled = false;
+        return;
+      }
       input.textContent = "";
       refresh();
       if (App.store.view !== "home" || App.store.homeTab !== "foryou") {
