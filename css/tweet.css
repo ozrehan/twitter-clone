@@ -1,0 +1,88 @@
+/* ============ tweet cards, action rows, nested replies ============ */
+.tweet {
+  display: flex; gap: 12px; padding: 12px 16px;
+  border-bottom: 1px solid var(--border);
+  cursor: pointer; transition: background 0.15s;
+}
+.tweet:hover { background: var(--hover-faint); }
+.tweet img.avatar { width: 40px; height: 40px; border-radius: 50%; flex-shrink: 0; }
+.tweet-body { flex: 1; min-width: 0; }
+
+.tweet-head {
+  display: flex; align-items: center; gap: 4px;
+  color: var(--text-dim); font-size: 15px;
+  white-space: nowrap; overflow: hidden;
+}
+.tweet-head b { color: var(--text); }
+.tweet-head .vbadge { width: 18px; height: 18px; flex-shrink: 0; fill: var(--accent); }
+.tweet-head .handle, .tweet-head .time { overflow: hidden; text-overflow: ellipsis; }
+
+.tweet-text { margin: 2px 0 10px; line-height: 1.4; word-wrap: break-word; }
+.tweet-text .tag { color: var(--accent); cursor: pointer; }
+.tweet-text .tag:hover { text-decoration: underline; }
+
+.tweet-img {
+  width: 100%; border-radius: var(--radius-img);
+  border: 1px solid var(--border); margin-bottom: 4px;
+}
+
+/* action row */
+.actions { display: flex; justify-content: space-between; max-width: 425px; margin: 4px -8px 0; }
+.act {
+  display: flex; align-items: center; gap: 2px;
+  color: var(--text-dim); font-size: 13px;
+  background: none; border: none; cursor: pointer; padding: 0;
+}
+.act .circ {
+  width: 34px; height: 34px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  transition: background 0.15s;
+}
+.act .icon { width: 18px; height: 18px; }
+.act.reply:hover { color: var(--accent); }
+.act.reply:hover .circ { background: var(--accent-faint); }
+.act.repost:hover { color: var(--green); }
+.act.repost:hover .circ { background: var(--green-faint); }
+.act.like:hover { color: var(--pink); }
+.act.like:hover .circ { background: var(--pink-faint); }
+.act.views:hover { color: var(--accent); }
+.act.views:hover .circ { background: var(--accent-faint); }
+.act.like.liked { color: var(--pink); }
+.act.like.liked .icon { fill: var(--pink); }
+.act.repost.reposted { color: var(--green); }
+.act.bookmarked { color: var(--accent); }
+.act.bookmarked .icon { fill: var(--accent); }
+.end-icons { display: flex; }
+
+/* inline reply box + nested replies */
+.reply-box { display: flex; gap: 10px; padding: 10px 0 4px; align-items: center; }
+.reply-box img.avatar { width: 32px; height: 32px; border-radius: 50%; }
+.reply-box .r-input {
+  flex: 1; background: var(--search-bg); border: 1px solid var(--border);
+  border-radius: var(--radius-pill); padding: 10px 16px;
+  color: var(--text); font-size: 14px; outline: none;
+}
+.reply-box .r-input:focus { border-color: var(--accent); }
+.reply-box button {
+  background: var(--accent); color: #fff; border: none;
+  border-radius: var(--radius-pill); padding: 6px 16px;
+  font-weight: 700; cursor: pointer; font-size: 14px;
+}
+
+.nested {
+  margin-top: 8px; border-left: 2px solid var(--border);
+  padding-left: 12px; display: flex; flex-direction: column; gap: 8px;
+}
+.nested .n { font-size: 14px; line-height: 1.4; }
+.nested .n b { margin-right: 4px; }
+.nested .n span.h { color: var(--text-dim); }
+
+/* big tweet (detail view) */
+.tweet-big { padding: 16px; border-bottom: 1px solid var(--border); }
+.tweet-big .tweet-head { font-size: 15px; margin-bottom: 2px; }
+.tweet-big .tweet-head img.avatar { width: 40px; height: 40px; border-radius: 50%; }
+.tweet-big .big-text { font-size: 23px; line-height: 1.35; margin: 12px 0; }
+.tweet-big .big-time { color: var(--text-dim); font-size: 15px; padding-bottom: 12px; border-bottom: 1px solid var(--border); }
+.tweet-big .big-stats { display: flex; gap: 20px; padding: 12px 0; border-bottom: 1px solid var(--border); font-size: 15px; color: var(--text-dim); }
+.tweet-big .big-stats b { color: var(--text); }
+.tweet-big .actions { max-width: none; justify-content: space-around; margin: 4px 0 0; }
