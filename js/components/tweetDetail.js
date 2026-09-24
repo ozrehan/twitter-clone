@@ -1,14 +1,25 @@
-/* components/tweetDetail.js — click a tweet -> full thread view with back button. */
+/* components/tweetDetail.js — click a tweet -> full thread view (API-backed). */
 (function (App) {
   "use strict";
 
   App.renderTweetDetail = function (root) {
-    var t = App.tweetById(App.store.detailTweet);
-    if (!t) { App.navigate("home"); return; }
+    var id = App.store.detailTweet;
+    root.innerHTML = '<div class="view-head"><div class="titles"><b>Post</b></div></div>' +
+      '<div class="ob-loading" style="padding:40px;text-align:center;color:var(--text-dim)">Loading…</div>';
 
-    /* thread = other tweets by same author around it (simple context) */
-    var context = App.tweetsByUser(t.userId).filter(function (x) { return x.id !== t.id; }).slice(0, 2);
+    App.api.get("/api/tweets/" + id).then(function (res) {
+      App.cacheTweet(res.tweet);
+      App.cacheTweets(res.context);
+      draw(root, res.tweet, res.context);
+    }).catch(function () {
+      root.innerHTML = '<div class="view-head"><button class="back-btn" data-back>' + App.icon("back") +
+        '</button><div class="titles"><b>Post</b></div></div>' +
+        '<div class="empty-state"><h3>Post not found</h3></div>';
+      App.on(root, "click", "[data-back]", function () { App.navigate("home"); });
+    });
+  };
 
+  function draw(root, t, context) {
     root.innerHTML =
       '<div class="view-head"><button class="back-btn" data-back>' + App.icon("back") + "</button>" +
         '<div class="titles"><b>Post</b></div></div>' +
@@ -18,8 +29,8 @@
         "Replies</div>" +
       '<div id="detailReplies">' + (t.nested.length ? t.nested.map(function (n) {
         var nu = App.userById(n.userId);
-        return '<article class="tweet"><img class="avatar" data-user-link="' + nu.id + '" src="' + App.avatar(nu.seed) + '" alt="">' +
-          '<div class="tweet-body"><div class="tweet-head"><b data-user-link="' + nu.id + '">' + App.esc(nu.name) + "</b>" +
+        return '<article class="tweet"><img class="avatar" data-user-link="' + nu.username + '" src="' + App.avatar(nu.seed) + '" alt="">' +
+          '<div class="tweet-body"><div class="tweet-head"><b data-user-link="' + nu.username + '">' + App.esc(nu.name) + "</b>" +
           (nu.verified ? App.vbadge() : "") +
           '<span class="handle">@' + nu.handle + " ·</span>" +
           '<span class="time">' + App.esc(n.time) + "</span></div>" +
@@ -28,5 +39,5 @@
 
     App.on(root, "click", "[data-back]", function () { App.navigate("home"); });
     App.wireTweetActions(root);
-  };
+  }
 })(window.App);
