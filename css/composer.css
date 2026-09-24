@@ -1,0 +1,44 @@
+/* ============ compose box (with 280-char progress ring) ============ */
+.compose { display: flex; gap: 12px; padding: 16px; border-bottom: 1px solid var(--border); }
+.compose img.avatar { width: 40px; height: 40px; border-radius: 50%; flex-shrink: 0; }
+.compose-body { flex: 1; min-width: 0; }
+
+.compose-input {
+  font-size: 20px; color: var(--text);
+  padding: 8px 0; min-height: 40px; outline: none; word-break: break-word;
+}
+.compose-input:empty::before { content: "What is happening?!"; color: var(--text-dim); }
+
+.compose-tools {
+  display: flex; align-items: center; justify-content: space-between;
+  border-top: 1px solid var(--border); padding-top: 12px; margin-top: 4px;
+}
+.compose-icons { display: flex; gap: 2px; }
+
+.icon-btn {
+  width: 34px; height: 34px; border-radius: 50%;
+  border: none; background: none; color: var(--accent);
+  cursor: pointer; display: flex; align-items: center; justify-content: center;
+}
+.icon-btn:hover { background: var(--accent-faint); }
+.icon-btn .icon { width: 18px; height: 18px; }
+
+.compose-submit { display: flex; align-items: center; gap: 12px; }
+
+/* circular character counter */
+.char-ring { width: 28px; height: 28px; display: none; transform: rotate(-90deg); }
+.char-ring.show { display: block; }
+.char-ring .track { stroke: var(--border); }
+.char-ring .prog { stroke: var(--accent); stroke-linecap: round; transition: stroke-dashoffset 0.15s; }
+.char-ring.warn .prog { stroke: #ffd400; }
+.char-ring.over .prog { stroke: var(--danger); }
+.char-count { font-size: 13px; color: var(--danger); display: none; font-weight: 700; }
+.char-count.show { display: block; }
+
+.post-btn {
+  background: var(--accent); color: #fff; border: none;
+  border-radius: var(--radius-pill); padding: 8px 20px;
+  font-size: 15px; font-weight: 700; cursor: pointer;
+}
+.post-btn:hover:not(:disabled) { background: var(--accent-hover); }
+.post-btn:disabled { opacity: 0.5; cursor: default; }
