@@ -1,0 +1,31 @@
+/* ============ X dark theme design tokens ============ */
+:root {
+  --bg: #000;
+  --text: #e7e9ea;
+  --text-dim: #71767b;
+  --border: #2f3336;
+  --accent: #1d9bf0;
+  --accent-hover: #1a8cd8;
+  --pink: #f91880;
+  --green: #00ba7c;
+  --card: #16181c;
+  --search-bg: #202327;
+  --danger: #f4212e;
+
+  --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+
+  --nav-width: 275px;
+  --center-width: 600px;
+  --right-width: 350px;
+  --layout-max: 1265px;
+
+  --radius-pill: 9999px;
+  --radius-card: 16px;
+  --radius-img: 16px;
+
+  --hover-bg: rgba(231, 233, 234, 0.1);
+  --hover-faint: rgba(255, 255, 255, 0.03);
+  --accent-faint: rgba(29, 155, 240, 0.1);
+  --pink-faint: rgba(249, 24, 128, 0.1);
+  --green-faint: rgba(0, 186, 124, 0.1);
+}
